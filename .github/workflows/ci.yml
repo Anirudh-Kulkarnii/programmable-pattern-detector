@@ -32,8 +32,9 @@ jobs:
 
       - name: Download Sky130 Primitives for GLS
         run: |
-          curl -s https://raw.githubusercontent.com/google/skywater-pdk-libs-sky130_fd_sc_hd/master/cells/primitives.v -o sky130_models/primitives.v
-          curl -s https://raw.githubusercontent.com/google/skywater-pdk-libs-sky130_fd_sc_hd/master/cells/sky130_fd_sc_hd.v -o sky130_models/sky130_fd_sc_hd.v
+          curl -f -sSL https://raw.githubusercontent.com/efabless/skywater-pdk-libs-sky130_fd_sc_hd/master/cells/primitives.v -o sky130_models/primitives.v
+          curl -f -sSL https://raw.githubusercontent.com/efabless/skywater-pdk-libs-sky130_fd_sc_hd/master/cells/sky130_fd_sc_hd.v -o sky130_models/sky130_fd_sc_hd.v
+          head -n 5 sky130_models/primitives.v
 
       - name: Run Post-Layout Gate-Level Simulation (GLS)
         run: |
