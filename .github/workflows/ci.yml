@@ -20,6 +20,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y iverilog
 
+      - name: Prepare Simulation Directories
+        run: |
+          mkdir -p sim
+          mkdir -p sky130_models
+
       - name: Run Behavioral RTL Simulation
         run: |
           iverilog -g2012 -o sim_rtl rtl/pattern_detector.v tb/tb_pattern_detector.v
@@ -27,7 +32,6 @@ jobs:
 
       - name: Download Sky130 Primitives for GLS
         run: |
-          mkdir -p sky130_models
           curl -s https://raw.githubusercontent.com/google/skywater-pdk-libs-sky130_fd_sc_hd/master/cells/primitives.v -o sky130_models/primitives.v
           curl -s https://raw.githubusercontent.com/google/skywater-pdk-libs-sky130_fd_sc_hd/master/cells/sky130_fd_sc_hd.v -o sky130_models/sky130_fd_sc_hd.v
 
