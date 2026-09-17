@@ -1,0 +1,22 @@
+# Ignore OpenLane intermediate run artifacts except final deliverables
+openlane/pattern_detector/runs/*/logs/
+openlane/pattern_detector/runs/*/tmp/
+openlane/pattern_detector/runs/*/reports/
+*.vcd
+sim_gls
+sim_rtl
+*.dot
+sim/
+syn/
+openlane/pattern_detector/runs/hardening_run/logs/
+openlane/pattern_detector/runs/hardening_run/results/cts/
+openlane/pattern_detector/runs/hardening_run/results/floorplan/
+openlane/pattern_detector/runs/hardening_run/results/placement/
+openlane/pattern_detector/runs/hardening_run/results/routing/
+openlane/pattern_detector/runs/hardening_run/results/signoff/
+openlane/pattern_detector/runs/hardening_run/*.log
+openlane/pattern_detector/runs/hardening_run/*.yaml
+openlane/pattern_detector/runs/hardening_run/OPENLANE_COMMIT
+openlane/pattern_detector/runs/hardening_run/PDK_SOURCES
+openlane/pattern_detector/runs/hardening_run/config.tcl
+openlane/pattern_detector/runs/hardening_run/results/synthesis/*.sdf
