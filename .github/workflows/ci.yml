@@ -20,28 +20,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y iverilog
 
-      - name: Prepare Simulation Directories
+      - name: Prepare Simulation Output Directory
         run: |
-          mkdir -p sim
-          mkdir -p sky130_models
+          mkdir -p sim/build
 
       - name: Run Behavioral RTL Simulation
         run: |
-          iverilog -g2012 -o sim_rtl rtl/pattern_detector.v tb/tb_pattern_detector.v
-          vvp sim_rtl
-
-      - name: Download Sky130 Primitives for GLS
-        run: |
-          curl -f -sSL https://raw.githubusercontent.com/efabless/skywater-pdk-libs-sky130_fd_sc_hd/master/cells/primitives.v -o sky130_models/primitives.v
-          curl -f -sSL https://raw.githubusercontent.com/efabless/skywater-pdk-libs-sky130_fd_sc_hd/master/cells/sky130_fd_sc_hd.v -o sky130_models/sky130_fd_sc_hd.v
-          head -n 5 sky130_models/primitives.v
+          iverilog -g2012 -o sim/build/sim_rtl rtl/pattern_detector.v tb/tb_pattern_detector.v
+          vvp sim/build/sim_rtl
 
       - name: Run Post-Layout Gate-Level Simulation (GLS)
         run: |
           iverilog -g2012 -DFUNCTIONAL -DUSE_POWER_PINS -DUNIT_DELAY=#1 \
-            -o sim_gls \
-            sky130_models/primitives.v \
-            sky130_models/sky130_fd_sc_hd.v \
+            -o sim/build/sim_gls \
+            sim/models/primitives.v \
+            sim/models/sky130_fd_sc_hd.v \
             openlane/pattern_detector/runs/hardening_run/results/final/verilog/gl/pattern_detector.v \
             tb/tb_pattern_detector_gls.v
-          vvp sim_gls
+          vvp sim/build/sim_gls
