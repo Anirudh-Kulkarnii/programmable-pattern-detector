@@ -31,10 +31,5 @@ jobs:
 
       - name: Run Post-Layout Gate-Level Simulation (GLS)
         run: |
-          iverilog -g2012 -DFUNCTIONAL -DUSE_POWER_PINS -DUNIT_DELAY=#1 \
-            -o sim/build/sim_gls \
-            sim/models/primitives.v \
-            sim/models/sky130_fd_sc_hd.v \
-            openlane/pattern_detector/runs/hardening_run/results/final/verilog/gl/pattern_detector.v \
-            tb/tb_pattern_detector_gls.v
+          iverilog -g2012 -DFUNCTIONAL -DUSE_POWER_PINS -DUNIT_DELAY=#1             -o sim/build/sim_gls             sim/models/primitives.v             sim/models/sky130_fd_sc_hd.v             openlane/pattern_detector/runs/hardening_run/results/final/verilog/gl/pattern_detector.v             tb/tb_pattern_detector_gls.v
           vvp sim/build/sim_gls
