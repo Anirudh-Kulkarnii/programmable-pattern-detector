@@ -28,8 +28,8 @@ Hardened using OpenLane targeting the `sky130_fd_sc_hd` standard cell library.
 | **Standard Cell Library** | `sky130_fd_sc_hd` | OpenLane Flow |
 | **Design Rule Check (DRC)** | **0 Violations Clean** | Magic DRC |
 | **Layout vs Schematic (LVS)** | **0 Errors Clean** | Netgen LVS |
-| **Setup Slack (Worst Corner)** | **+1.24 ns** (Met) | OpenSTA / Tempus |
-| **Hold Slack (Worst Corner)** | **+0.18 ns** (Met) | OpenSTA / Tempus |
+| **Setup Slack (Worst Corner)** | **+4.97 ns** (Met) | OpenSTA |
+| **Hold Slack (Worst Corner)** | **+0.32 ns** (Met) | OpenSTA |
 | **Clock Frequency** | 100 MHz | Static Timing Signoff |
 
 All detailed signoff logs, timing summaries, and reports are preserved under [`reports/signoff/`](./reports/signoff/).
@@ -63,13 +63,19 @@ Automated testing is executed via GitHub Actions on every push:
 ## Repository Structure
 
 ```text
-├── .github/workflows/        # Automated CI/CD pipelines (RTL & GLS)
-├── assets/                   # Layout, schematic, and waveform images
-├── config.json               # OpenLane physical hardening configuration
-├── gls/                      # Synthesized gate-level netlist deliverables
-├── reports/signoff/          # DRC, LVS, and timing signoff reports
-├── rtl/                      # Verilog synthesizable RTL
-├── sim/                      # Local simulation targets and wave dumps
-├── tb/                       # Testbench suite covering edge cases & reconfig
-├── toolchain_env.txt         # Tool versions and commit hashes
-└── LICENSE                   # Apache 2.0 License
+├── .github/workflows/         # Automated CI/CD pipelines (RTL & GLS)
+├── assets/                    # Layout, schematic, and waveform images
+├── openlane/pattern_detector/
+│   ├── config.json            # OpenLane physical hardening configuration
+│   ├── pin_order.cfg
+│   └── runs/hardening_run/results/final/
+│       ├── gds/ def/ lef/ lib/ sdc/ spef/ sdf/   # Signoff deliverables (multicorner)
+│       └── verilog/gl/        # Post-synthesis & post-layout gate-level netlists
+├── reports/signoff/           # DRC, LVS, and timing signoff reports
+├── rtl/                       # Verilog synthesizable RTL
+├── sim/models/                # Sky130 cell/primitive models for GLS
+├── tb/                        # Testbench suite covering edge cases & reconfig
+├── toolchain_env.txt          # Tool versions and commit hashes
+└── LICENSE                    # Apache 2.0 License
+```
+
