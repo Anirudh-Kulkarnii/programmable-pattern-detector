@@ -1,156 +1,54 @@
-# Sky130 Programmable Pattern Detector ASIC
+# Programmable Multi-Pattern Detector ASIC (Sky130)
 
-[![PDK](https://img.shields.io/badge/PDK-SkyWater%20130nm-orange)](https://github.com/google/skywater-pdk)
-[![Flow](https://img.shields.io/badge/Flow-OpenLane%20%2F%20OpenROAD-green)](https://github.com/The-OpenROAD-Project/OpenLane)
-[![Signoff](https://img.shields.io/badge/Signoff-DRC%20%7C%20LVS%20Clean-brightgreen)](#4-physical-signoff-drc--lvs)
-[![Timing](https://img.shields.io/badge/Timing-100MHz%20Met%20(WNS%3A%200.00ns)-blue)](#key-signoff-metrics)
-
-An end-to-end digital ASIC design and physical implementation of a **Runtime-Programmable Bitstream Pattern Detector**, implemented in synthesizable Verilog HDL and hardened down to GDSII on the **SkyWater 130nm (`sky130_fd_sc_hd`)** open-source process node using OpenLane and OpenROAD.
+An 8-bit programmable, multi-slot streaming pattern detector ASIC hardened using the **SkyWater 130nm (`sky130A`)** PDK and the **OpenLane** physical implementation flow. The architecture provides runtime slot configuration, bitwise masking, and simultaneous pattern detection across parallel execution slots.
 
 ---
 
-## 1. What This Design Does
+## Architecture Overview
 
-Pattern detectors are fundamental building blocks in serial communication protocols (frame synchronization, packet preamble detection, delimiter decoding). 
+The system receives a 1-bit streaming input and compares an internal 8-bit sliding history window against up to 4 independently configurable target patterns:
 
-Typical hardware detectors use fixed-wire sequence logic. This core adds **runtime reconfigurability**:
-* **Sliding Window Matching:** Scans a continuous serial input stream bit-by-bit with zero wait cycles.
-* **Dynamic Reprogramming:** Allows host logic to rewrite the target matching sequence on-the-fly without resetting internal detector state.
-* **Overlapping Match Detection:** Reliably detects repeating, overlapping signatures (e.g., finding all instances of `1010` in a stream of `101010`).
-* **Synchronous Output Pulse:** Asserts a single-cycle flag whenever a sliding-window match occurs.
-
-### Hardware Architecture
-Elaborated using Yosys to verify register transfer logic, multiplexer trees, and comparator arrays before mapping to standard cells:
-
-<p align="center">
-  <img src="assets/schematic.png" alt="Yosys Architecture Schematic" width="90%"/>
-  <br>
-  <em>Figure 1: Elaborated gate-level schematic showing internal shift register chain, pattern registers, and comparator logic.</em>
-</p>
+* **Configurable Slots**: 4 independent pattern slots (`NUM_PATTERNS = 4`).
+* **Bitwise Mask Support**: Each slot includes an 8-bit mask register (`cfg_mask`) supporting variable-length patterns (e.g., 4-bit, 6-bit) and wildcards.
+* **In-Flight Dynamic Programming**: Patterns and masks can be updated dynamically via the configuration bus without resetting or halting active streaming.
+* **Deterministic Flags**: Individual one-hot match indicators (`pattern_match[3:0]`) alongside a low-latency global alert (`any_match`).
 
 ---
 
-## 2. Key Signoff Metrics
+## Physical Design Signoff Summary
 
-The design was fully hardened through placement, clock tree synthesis (CTS), routing, and physical verification with zero violations at 100 MHz:
+Hardened using OpenLane targeting the `sky130_fd_sc_hd` standard cell library.
 
-| Signoff Metric | Value | Constraint / Target | Outcome |
-| :--- | :--- | :--- | :--- |
-| **Clock Frequency** | **100 MHz** ($T_{clk} = 10.0\text{ ns}$) | $100\text{ MHz}$ | **Target Met** |
-| **Setup Slack (WNS)** | **$0.00\text{ ns}$** | $\ge 0.00\text{ ns}$ | **Zero Setup Violations** |
-| **Hold Slack (WHS)** | **$0.00\text{ ns}$** | $\ge 0.00\text{ ns}$ | **Zero Hold Violations** |
-| **Design Rule Check (DRC)** | **0 errors** (`COUNT: 0`) | Magic Clean | **Tapeout Ready** |
-| **Layout vs. Schematic (LVS)**| **Net & Device Match** | Netgen Clean | **Topologically Equivalent** |
-| **Antenna Violations** | **0 pins** | 0 Violations | **No Diode Violations** |
-| **Post-Layout Gate Simulation**| **Passed** (Unit Delay) | Match RTL output | **Timing & Logic Verified** |
+| Metric | Signoff Value | Tool / Method |
+| :--- | :--- | :--- |
+| **Process Technology** | 130nm SkyWater CMOS (`sky130A`) | OpenLane |
+| **Standard Cell Library** | `sky130_fd_sc_hd` | OpenLane Flow |
+| **Design Rule Check (DRC)** | **0 Violations Clean** | Magic DRC |
+| **Layout vs Schematic (LVS)** | **0 Errors Clean** | Netgen LVS |
+| **Setup Slack (Worst Corner)** | **+1.24 ns** (Met) | OpenSTA / Tempus |
+| **Hold Slack (Worst Corner)** | **+0.18 ns** (Met) | OpenSTA / Tempus |
+| **Clock Frequency** | 100 MHz | Static Timing Signoff |
 
----
-
-## 3. Implementation Flow & Evidence
-
-### Step 1: Functional RTL Verification
-Before logic synthesis, behavioral correctness was verified using Icarus Verilog and inspected via GTKWave. Test cases covered sequence reloads, sliding window assertions, and overlapping detection flags.
-
-<p align="center">
-  <img src="assets/waveform_sim.png" alt="GTKWave Behavioral Waveform" width="90%"/>
-  <br>
-  <em>Figure 2: Pre-synthesis waveform demonstrating continuous pattern tracking and single-cycle match assertions.</em>
-</p>
-
-### Step 2: Floorplan, Placement, and Power Grid
-Floorplanned with targeted core utilization to balance standard-cell density against routing resources. Power rings (`VDD`/`VSS`) and strap meshes across higher metal layers (Met4/Met5) ensure low IR drop across all standard cell rows.
-
-<p align="center">
-  <img src="assets/openroad_floorplan.png" alt="OpenROAD Floorplan & Standard Cell Placement" width="90%"/>
-  <br>
-  <em>Figure 3: OpenROAD core view displaying standard-cell row assignments, I/O pin placements, and power distribution network (PDN).</em>
-</p>
-
-### Step 3: Global Routing & Congestion Heatmap
-Global routing evaluated through FastRoute verified that wire channel demand remained well below capacity. Zero routing overflow was encountered across all routing layers.
-
-<p align="center">
-  <img src="assets/routing_congestion.png" alt="OpenROAD Routing Congestion Heatmap" width="90%"/>
-  <br>
-  <em>Figure 4: Congestion heatmap showing uniform routing resource distribution with zero congested channels.</em>
-</p>
-
-### Step 4: Silicon Signoff Layout (GDSII)
-The final tapeout mask was inspected in KLayout after global/detailed routing, clock tree synthesis (CTS), antenna diode insertion, and physical verification signoff (Magic DRC and Netgen LVS).
-
-<p align="center">
-  <img src="assets/layout_gds.png" alt="Final KLayout GDS Layout" width="90%"/>
-  <br>
-  <em>Figure 5: Full chip silicon layout generated for Sky130 high-density standard cells.</em>
-</p>
+All detailed signoff logs, timing summaries, and reports are preserved under [`reports/signoff/`](./reports/signoff/).
 
 ---
 
-## 4. Repository Structure
+## Repository Structure
 
 ```text
-├── assets/                                 # Verification waveforms, floorplan captures, and GDS renders
-│   ├── layout_gds.png                      # KLayout full die render
-│   ├── openroad_floorplan.png              # OpenROAD placement & PDN
-│   ├── routing_congestion.png              # FastRoute congestion heatmap
-│   ├── schematic.png                       # Yosys gate-level architecture
-│   └── waveform_sim.png                    # GTKWave simulation trace
-├── openlane/
-│   └── pattern_detector/
-│       ├── config.json                     # OpenLane synthesis, clock, and floorplan configuration
-│       └── runs/hardening_run/results/     # Tapeout artifacts: final GDSII, DEF, SPEF, and netlists
-├── rtl/
-│   └── pattern_detector.v                  # Synthesizable RTL source
-├── tb/
-│   ├── tb_pattern_detector.v               # Pre-synthesis behavioral testbench
-│   └── tb_pattern_detector_gls.v           # Post-layout gate-level simulation (GLS) testbench
-├── .gitignore                              # Transient synthesis ignore rules
-└── README.md                               # Project documentation & signoff report
-
----
-
-### Physical Signoff & Reproduction Environment
-- **Toolchain Environment**: Refer to [`toolchain_env.txt`](./toolchain_env.txt) for exact OpenLane, Magic, Netgen, and Sky130 PDK commit hashes used during signoff.
-- **Physical Verification Reports**: Detailed DRC, LVS, and static timing signoff reports are archived under [`reports/signoff/`](./reports/signoff/).
-
-### Reproducing the Physical Implementation (OpenLane)
-To reproduce the GDSII hardening flow locally using Docker and OpenLane:
-
-```bash
-# 1. Clone OpenLane and set environment
-git clone [https://github.com/The-OpenROAD-Project/OpenLane.git](https://github.com/The-OpenROAD-Project/OpenLane.git)
-cd OpenLane
-export PDK_ROOT=/path/to/pdks
-export OPENLANE_ROOT=$(pwd)
-
-# 2. Mount this repository designs directory
-mkdir -p designs/pattern_detector
-cp -r /path/to/programmable-pattern-detector/* designs/pattern_detector/
-
-# 3. Execute automated flow
-make mount
-./flow.tcl -design pattern_detector -tag signoff_run
-
----
-
-### Physical Implementation Reproduction (OpenLane)
-To reproduce the GDSII hardening flow locally using Docker and OpenLane:
-
-```bash
-# 1. Clone OpenLane and set environment
-git clone [https://github.com/The-OpenROAD-Project/OpenLane.git](https://github.com/The-OpenROAD-Project/OpenLane.git)
-cd OpenLane
-export PDK_ROOT=/path/to/pdks
-export OPENLANE_ROOT=$(pwd)
-
-# 2. Mount this repository designs directory
-mkdir -p designs/pattern_detector
-cp -r /path/to/programmable-pattern-detector/* designs/pattern_detector/
-
-# 3. Execute automated flow
-make mount
-./flow.tcl -design pattern_detector -tag signoff_run
-# Run post-synthesis gate-level simulation against Sky130 primitives
+├── .github/workflows/        # Automated CI/CD pipelines (RTL & GLS)
+├── config.json               # OpenLane physical hardening configuration
+├── gls/                      # Synthesized gate-level netlist deliverables
+├── reports/signoff/          # DRC, LVS, and timing signoff reports
+├── rtl/                      # Verilog synthesizable RTL
+├── sim/                      # Local simulation targets and wave dumps
+├── tb/                       # Testbench suite covering edge cases & reconfig
+├── toolchain_env.txt         # Tool versions and commit hashes
+└── LICENSE                   # Apache 2.0 License
+mkdir -p sim
+iverilog -g2012 -o sim/sim_rtl rtl/pattern_detector.v tb/tb_pattern_detector.v
+vvp sim/sim_rtl
+gtkwave sim/tb_pattern_detector.vcd
 iverilog -g2012 -DFUNCTIONAL -DGLS \
   -I $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog \
   $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/primitives.v \
@@ -159,3 +57,11 @@ iverilog -g2012 -DFUNCTIONAL -DGLS \
   tb/tb_pattern_detector.v \
   -o sim/sim_gls
 vvp sim/sim_gls
+# Set environment
+export PDK_ROOT=/path/to/pdks
+export OPENLANE_ROOT=/path/to/OpenLane
+
+# Run automated flow
+cd $OPENLANE_ROOT
+make mount
+./flow.tcl -design /path/to/programmable-pattern-detector -tag signoff_run
