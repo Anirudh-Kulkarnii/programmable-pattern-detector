@@ -91,3 +91,43 @@ module tb_pattern_detector;
     end
 
 endmodule
+
+// =================================================================
+// ADDITIONAL EDGE-CASE SUITE: Multi-slot Collisions & Reconfig
+// =================================================================
+initial begin
+    #250;
+    $display("\n--- [TEST 4] Edge Case: Dynamic Reconfiguration Mid-Stream ---");
+    @(posedge clk);
+    prog_en = 1; prog_slot = 2'b00; prog_pattern = 4'b1111;
+    @(posedge clk);
+    prog_en = 0;
+    
+    // Stream: 1 -> 1 -> 1 -> 1
+    data_in = 1; @(posedge clk);
+    data_in = 1; @(posedge clk);
+    data_in = 1; @(posedge clk);
+    data_in = 1; @(posedge clk);
+    #1;
+    if (pattern_match && match_slot == 2'b00)
+        $display("[PASS] Dynamic slot reconfiguration to 4'b1111 verified.");
+    else
+        $display("[FAIL] Dynamic slot reconfiguration failed.");
+
+    $display("\n--- [TEST 5] Edge Case: Overlapping Pattern Collisions ---");
+    @(posedge clk);
+    prog_en = 1; prog_slot = 2'b01; prog_pattern = 4'b1110;
+    @(posedge clk);
+    prog_en = 0;
+
+    // Stream: 1 -> 1 -> 1 -> 0 (should match slot 01 without false-positive on slot 00)
+    data_in = 1; @(posedge clk);
+    data_in = 1; @(posedge clk);
+    data_in = 1; @(posedge clk);
+    data_in = 0; @(posedge clk);
+    #1;
+    if (pattern_match && match_slot == 2'b01)
+        $display("[PASS] Overlapping stream collision successfully resolved.");
+    else
+        $display("[FAIL] Overlapping stream collision failed.");
+end
