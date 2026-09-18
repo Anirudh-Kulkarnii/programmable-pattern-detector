@@ -13,6 +13,9 @@ The system receives a 1-bit streaming input and compares an internal 8-bit slidi
 * **In-Flight Dynamic Programming**: Patterns and masks can be updated dynamically via the configuration bus without resetting or halting active streaming.
 * **Deterministic Flags**: Individual one-hot match indicators (`pattern_match[3:0]`) alongside a low-latency global alert (`any_match`).
 
+### Synthesized Gate-Level Schematic
+![Schematic](./assets/schematic.png)
+
 ---
 
 ## Physical Design Signoff Summary
@@ -31,12 +34,37 @@ Hardened using OpenLane targeting the `sky130_fd_sc_hd` standard cell library.
 
 All detailed signoff logs, timing summaries, and reports are preserved under [`reports/signoff/`](./reports/signoff/).
 
+### Silicon Layout & Physical Visuals
+
+| OpenLane Silicon GDSII Layout | OpenROAD Floorplan View |
+| :---: | :---: |
+| ![Layout GDS](./assets/layout_gds.png) | ![Floorplan](./assets/openroad_floorplan.png) |
+
+| Detailed Routing Congestion Map |
+| :---: |
+| ![Routing Congestion](./assets/routing_congestion.png) |
+
+---
+
+## Verification & Simulation Waveforms
+
+Automated testing is executed via GitHub Actions on every push:
+
+1. **RTL Functional Regression**: Validates serial bit shifting, multi-pattern detection, and global match assertion.
+2. **In-Flight Reconfiguration**: Confirms internal target registers reprogram cleanly mid-stream without resetting shift history.
+3. **Prefix Collision Discrimination**: Tests overlapping prefixes (e.g., `1111` vs `1110`) to confirm parallel comparator isolation.
+4. **Gate-Level Simulation (GLS)**: Post-synthesis functional verification against Sky130 standard cell primitives.
+
+### GTKWave RTL Waveform Execution
+![Waveform Simulation](./assets/waveform_sim.png)
+
 ---
 
 ## Repository Structure
 
 ```text
 ├── .github/workflows/        # Automated CI/CD pipelines (RTL & GLS)
+├── assets/                   # Layout, schematic, and waveform images
 ├── config.json               # OpenLane physical hardening configuration
 ├── gls/                      # Synthesized gate-level netlist deliverables
 ├── reports/signoff/          # DRC, LVS, and timing signoff reports
@@ -45,23 +73,3 @@ All detailed signoff logs, timing summaries, and reports are preserved under [`r
 ├── tb/                       # Testbench suite covering edge cases & reconfig
 ├── toolchain_env.txt         # Tool versions and commit hashes
 └── LICENSE                   # Apache 2.0 License
-mkdir -p sim
-iverilog -g2012 -o sim/sim_rtl rtl/pattern_detector.v tb/tb_pattern_detector.v
-vvp sim/sim_rtl
-gtkwave sim/tb_pattern_detector.vcd
-iverilog -g2012 -DFUNCTIONAL -DGLS \
-  -I $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog \
-  $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/primitives.v \
-  $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v \
-  gls/pattern_detector.synth.v \
-  tb/tb_pattern_detector.v \
-  -o sim/sim_gls
-vvp sim/sim_gls
-# Set environment
-export PDK_ROOT=/path/to/pdks
-export OPENLANE_ROOT=/path/to/OpenLane
-
-# Run automated flow
-cd $OPENLANE_ROOT
-make mount
-./flow.tcl -design /path/to/programmable-pattern-detector -tag signoff_run
