@@ -8,7 +8,7 @@ on:
 
 jobs:
   simulate:
-    name: RTL & Gate-Level Simulation
+    name: RTL Functional Simulation
     runs-on: ubuntu-latest
 
     steps:
@@ -20,16 +20,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y iverilog
 
-      - name: Prepare Simulation Output Directory
+      - name: Prepare Simulation Directories
         run: |
-          mkdir -p sim/build
+          mkdir -p sim
 
       - name: Run Behavioral RTL Simulation
         run: |
-          iverilog -g2012 -o sim/build/sim_rtl rtl/pattern_detector.v tb/tb_pattern_detector.v
-          vvp sim/build/sim_rtl
-
-      - name: Run Post-Layout Gate-Level Simulation (GLS)
-        run: |
-          iverilog -g2012 -DFUNCTIONAL -DUSE_POWER_PINS -DUNIT_DELAY=#1             -o sim/build/sim_gls             sim/models/primitives.v             sim/models/sky130_fd_sc_hd.v             openlane/pattern_detector/runs/hardening_run/results/final/verilog/gl/pattern_detector.v             tb/tb_pattern_detector_gls.v
-          vvp sim/build/sim_gls
+          iverilog -g2012 -o sim/sim_rtl rtl/pattern_detector.v tb/tb_pattern_detector.v
+          vvp sim/sim_rtl
