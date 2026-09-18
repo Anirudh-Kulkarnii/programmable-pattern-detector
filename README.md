@@ -112,3 +112,50 @@ The final tapeout mask was inspected in KLayout after global/detailed routing, c
 ### Physical Signoff & Reproduction Environment
 - **Toolchain Environment**: Refer to [`toolchain_env.txt`](./toolchain_env.txt) for exact OpenLane, Magic, Netgen, and Sky130 PDK commit hashes used during signoff.
 - **Physical Verification Reports**: Detailed DRC, LVS, and static timing signoff reports are archived under [`reports/signoff/`](./reports/signoff/).
+
+### Reproducing the Physical Implementation (OpenLane)
+To reproduce the GDSII hardening flow locally using Docker and OpenLane:
+
+```bash
+# 1. Clone OpenLane and set environment
+git clone [https://github.com/The-OpenROAD-Project/OpenLane.git](https://github.com/The-OpenROAD-Project/OpenLane.git)
+cd OpenLane
+export PDK_ROOT=/path/to/pdks
+export OPENLANE_ROOT=$(pwd)
+
+# 2. Mount this repository designs directory
+mkdir -p designs/pattern_detector
+cp -r /path/to/programmable-pattern-detector/* designs/pattern_detector/
+
+# 3. Execute automated flow
+make mount
+./flow.tcl -design pattern_detector -tag signoff_run
+
+---
+
+### Physical Implementation Reproduction (OpenLane)
+To reproduce the GDSII hardening flow locally using Docker and OpenLane:
+
+```bash
+# 1. Clone OpenLane and set environment
+git clone [https://github.com/The-OpenROAD-Project/OpenLane.git](https://github.com/The-OpenROAD-Project/OpenLane.git)
+cd OpenLane
+export PDK_ROOT=/path/to/pdks
+export OPENLANE_ROOT=$(pwd)
+
+# 2. Mount this repository designs directory
+mkdir -p designs/pattern_detector
+cp -r /path/to/programmable-pattern-detector/* designs/pattern_detector/
+
+# 3. Execute automated flow
+make mount
+./flow.tcl -design pattern_detector -tag signoff_run
+# Run post-synthesis gate-level simulation against Sky130 primitives
+iverilog -g2012 -DFUNCTIONAL -DGLS \
+  -I $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog \
+  $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/primitives.v \
+  $(PDK_ROOT)/sky130A/libs.ref/sky130_fd_sc_hd/verilog/sky130_fd_sc_hd.v \
+  gls/pattern_detector.synth.v \
+  tb/tb_pattern_detector.v \
+  -o sim/sim_gls
+vvp sim/sim_gls
