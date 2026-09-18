@@ -22,3 +22,6 @@ openlane/pattern_detector/runs/hardening_run/config.tcl
 openlane/pattern_detector/runs/hardening_run/results/synthesis/*.sdf
 sim/build/
 *.vcd
+*.gz
+*.vcd
+sim/sim_rtl

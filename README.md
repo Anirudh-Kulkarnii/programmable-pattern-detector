@@ -106,3 +106,9 @@ The final tapeout mask was inspected in KLayout after global/detailed routing, c
 │   └── tb_pattern_detector_gls.v           # Post-layout gate-level simulation (GLS) testbench
 ├── .gitignore                              # Transient synthesis ignore rules
 └── README.md                               # Project documentation & signoff report
+
+---
+
+### Physical Signoff & Reproduction Environment
+- **Toolchain Environment**: Refer to [`toolchain_env.txt`](./toolchain_env.txt) for exact OpenLane, Magic, Netgen, and Sky130 PDK commit hashes used during signoff.
+- **Physical Verification Reports**: Detailed DRC, LVS, and static timing signoff reports are archived under [`reports/signoff/`](./reports/signoff/).
